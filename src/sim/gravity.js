@@ -13,12 +13,12 @@ import { Accessor } from "three/examples/jsm/transpiler/AST.js";
  *
  * Softening (eps) prevents singularities when r → 0.
  */
-export function computeAcc(pos, mass, G, outAcc, eps){
+export function computeAcc(pos, mass, outAcc, G, eps){
     const N = mass.length;
 
     //Zero acceleration
     for (let i = 0; i < N * 3; i++){
-        out[i] = 0;
+        outAcc[i] = 0;
     }
 
     //double loop over every pair

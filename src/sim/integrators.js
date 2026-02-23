@@ -1,47 +1,33 @@
-/**
- * Newtonian N-body gravity with Plummer softening.
- *
- * a_i = G Σ_{j≠i} m_j (r_j - r_i) / (|r_j - r_i|^2 + eps^2)^(3/2)
- *
- * pos: Float32Array(N*3)  [x0,y0,z0, x1,y1,z1, ...]
- * mass: Float32Array(N)
- * outAcc: Float32Array(N*3)
- */
-export function computeAcc(pos, mass, outAcc, G, eps) {
+import { computeAcc } from "./gravity.js";
+
+export function stepVerlet(state, dt, G, eps) {
+  const { pos, vel, acc, mass } = state;
   const N = mass.length;
 
-  // zero acc
-  for (let k = 0; k < N * 3; k++) outAcc[k] = 0;
-
+  // 1) Kick half-step
   for (let i = 0; i < N; i++) {
-    const oi = i * 3;
-    const xi = pos[oi];
-    const yi = pos[oi + 1];
-    const zi = pos[oi + 2];
+    const o = i * 3;
+    vel[o]     += 0.5 * acc[o]     * dt;
+    vel[o + 1] += 0.5 * acc[o + 1] * dt;
+    vel[o + 2] += 0.5 * acc[o + 2] * dt;
+  }
 
-    let ax = 0, ay = 0, az = 0;
+  // 2) Drift
+  for (let i = 0; i < N; i++) {
+    const o = i * 3;
+    pos[o]     += vel[o]     * dt;
+    pos[o + 1] += vel[o + 1] * dt;
+    pos[o + 2] += vel[o + 2] * dt;
+  }
 
-    for (let j = 0; j < N; j++) {
-      if (i === j) continue;
+  // 3) New acceleration
+  computeAcc(pos, mass, acc, G, eps);
 
-      const oj = j * 3;
-
-      const dx = pos[oj]     - xi;
-      const dy = pos[oj + 1] - yi;
-      const dz = pos[oj + 2] - zi;
-
-      const r2 = dx*dx + dy*dy + dz*dz + eps*eps;
-      const invR = 1 / Math.sqrt(r2);
-      const invR3 = invR * invR * invR;
-
-      const scale = G * mass[j] * invR3;
-      ax += dx * scale;
-      ay += dy * scale;
-      az += dz * scale;
-    }
-
-    outAcc[oi]     = ax;
-    outAcc[oi + 1] = ay;
-    outAcc[oi + 2] = az;
+  // 4) Kick half-step
+  for (let i = 0; i < N; i++) {
+    const o = i * 3;
+    vel[o]     += 0.5 * acc[o]     * dt;
+    vel[o + 1] += 0.5 * acc[o + 1] * dt;
+    vel[o + 2] += 0.5 * acc[o + 2] * dt;
   }
 }

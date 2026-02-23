@@ -1,4 +1,4 @@
-import "/style.css";
+import "../src/style.css";
 
 import { createCamera } from "./render/createCamera.js";
 import { createRenderer } from "./render/createRenderer.js";
@@ -6,7 +6,7 @@ import { createScene } from "./render/createScene.js";
 import { createBodies } from "./render/createBodies.js";
 import { createTrail } from "./render/createTrails.js";
 
-import { createState2Body } from "./sim/state.js";
+import { createState } from "./sim/state.js";
 import { computeAcc } from "./sim/gravity.js";
 import { stepVerlet } from "./sim/integrators.js";
 
@@ -26,7 +26,7 @@ const bodies = createBodies(scene);
 const planetTrail = createTrail(scene, 256, 0x9ad1ff);
 
 
-const state = createState2Body();
+const state = createState();
 
 // Sim-parametre (sim-units)
 const G = 1.0;
@@ -50,7 +50,7 @@ function animate() {
 
   syncMeshesFromState();
 
-  planetTrail.update(state.pos[3], state.pos[4], state.pos[5]);
+  planetTrail(bodies.planet.position);
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
