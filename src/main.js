@@ -10,6 +10,8 @@ import { createState } from "./sim/state.js";
 import { computeAcc } from "./sim/gravity.js";
 import { stepVerlet } from "./sim/integrators.js";
 
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+
 const app = document.querySelector("#app");
 app.innerHTML = "";
 
@@ -19,6 +21,13 @@ const height = window.innerHeight;
 const scene = createScene();
 const camera = createCamera(width, height);
 const renderer = createRenderer(width, height);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+
+
+controls.target.set(0, 0, 0);
 
 app.append(renderer.domElement);
 
@@ -51,6 +60,8 @@ function animate() {
   syncMeshesFromState();
 
   planetTrail(bodies.planet.position);
+
+  controls.update();
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
