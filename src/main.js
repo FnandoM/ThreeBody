@@ -38,10 +38,10 @@ computeAcc(state.pos, state.mass, state.acc, G, eps);
 
 
 function syncMeshesFromState() {
-
   bodies.starA.position.set(state.pos[0], state.pos[1], state.pos[2]);
-
-  bodies.planet.position.set(state.pos[3], state.pos[4], state.pos[5]);
+  bodies.starB.position.set(state.pos[3], state.pos[4], state.pos[5]);
+  bodies.starC.position.set(state.pos[6], state.pos[7], state.pos[8]);
+  bodies.planet.position.set(state.pos[9], state.pos[10], state.pos[11]);
 }
 
 function animate() {
