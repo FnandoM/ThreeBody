@@ -32,7 +32,10 @@ controls.target.set(0, 0, 0);
 app.append(renderer.domElement);
 
 const bodies = createBodies(scene);
-const planetTrail = createTrail(scene, 256, 0x9ad1ff);
+const starATrail = createTrail(scene, 256, 0xfff3c4, 0.18);
+const starBTrail = createTrail(scene, 256, 0xffffff, 0.18);
+const starCTrail = createTrail(scene, 256, 0xffd6a5, 0.18);
+const planetTrail = createTrail(scene, 256, 0x9ad1ff, 0.28);
 
 
 const state = createState();
@@ -45,6 +48,78 @@ const dt = 0.005;
 //Initialiser acc én gang før første Verlet-step
 computeAcc(state.pos, state.mass, state.acc, G, eps);
 
+const bodyMeshes = [bodies.starA, bodies.starB, bodies.starC, bodies.planet];
+const bodyTrails = [starATrail, starBTrail, starCTrail, planetTrail];
+const collisionRadii = [0.45, 0.45, 0.45, 0.18];
+
+function mergeBodies(state, survivor, victim) {
+  const { pos, vel, mass } = state;
+  const so = survivor * 3;
+  const vo = victim * 3;
+
+  const m1 = mass[survivor];
+  const m2 = mass[victim];
+  if (m1 <= 0 || m2 <= 0) return;
+
+  const totalMass = m1 + m2;
+
+  // Center-of-mass merge with momentum conservation.
+  pos[so] = (pos[so] * m1 + pos[vo] * m2) / totalMass;
+  pos[so + 1] = (pos[so + 1] * m1 + pos[vo + 1] * m2) / totalMass;
+  pos[so + 2] = (pos[so + 2] * m1 + pos[vo + 2] * m2) / totalMass;
+
+  vel[so] = (vel[so] * m1 + vel[vo] * m2) / totalMass;
+  vel[so + 1] = (vel[so + 1] * m1 + vel[vo + 1] * m2) / totalMass;
+  vel[so + 2] = (vel[so + 2] * m1 + vel[vo + 2] * m2) / totalMass;
+
+  mass[survivor] = totalMass;
+  mass[victim] = 0;
+
+  vel[vo] = 0; vel[vo + 1] = 0; vel[vo + 2] = 0;
+  pos[vo] = pos[so]; pos[vo + 1] = pos[so + 1]; pos[vo + 2] = pos[so + 2];
+
+  bodyMeshes[victim].visible = false;
+
+  // Grow collision radius roughly with volume^(1/3) assuming constant density.
+  const r1 = collisionRadii[survivor];
+  const r2 = collisionRadii[victim];
+  collisionRadii[survivor] = Math.cbrt(r1 ** 3 + r2 ** 3);
+}
+
+function handleCollisions() {
+  const { pos, mass } = state;
+  const N = mass.length;
+  let changed = false;
+
+  for (let i = 0; i < N; i++) {
+    if (mass[i] <= 0) continue;
+    const oi = i * 3;
+
+    for (let j = i + 1; j < N; j++) {
+      if (mass[j] <= 0) continue;
+      const oj = j * 3;
+
+      const dx = pos[oj] - pos[oi];
+      const dy = pos[oj + 1] - pos[oi + 1];
+      const dz = pos[oj + 2] - pos[oi + 2];
+
+      const minDist = collisionRadii[i] + collisionRadii[j];
+      if (dx * dx + dy * dy + dz * dz > minDist * minDist) continue;
+
+      const survivor = mass[i] >= mass[j] ? i : j;
+      const victim = survivor === i ? j : i;
+      mergeBodies(state, survivor, victim);
+      changed = true;
+
+      if (mass[i] <= 0) break;
+    }
+  }
+
+  if (changed) {
+    computeAcc(state.pos, state.mass, state.acc, G, eps);
+  }
+}
+
 
 function syncMeshesFromState() {
   bodies.starA.position.set(state.pos[0], state.pos[1], state.pos[2]);
@@ -56,16 +131,21 @@ function syncMeshesFromState() {
 function animate() {
   // 1) Sim step
   stepVerlet(state, dt, G, eps);
+  handleCollisions();
 
   syncMeshesFromState();
 
-  planetTrail(bodies.planet.position);
+  for (let i = 0; i < bodyMeshes.length; i++) {
+    if (!bodyMeshes[i].visible) continue;
+    bodyTrails[i](bodyMeshes[i].position);
+  }
 
   controls.update();
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
+syncMeshesFromState();
 animate();
 
 // Resize: oppdater renderer + kamera-projeksjon

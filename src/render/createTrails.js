@@ -1,14 +1,14 @@
 import { BufferAttribute, BufferGeometry, Line, LineBasicMaterial } from 'three';
 
-export function createTrail(scene, length) {
+export function createTrail(scene, length, color = 0xffffff, opacity = 0.2) {
   const positions = new Float32Array(length * 3);
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(positions, 3));
 
   const material = new LineBasicMaterial({
-    color: 0xffffff,
+    color,
     transparent: true,
-    opacity: 0.2,
+    opacity,
   });
 
   const line = new Line(geometry, material);
