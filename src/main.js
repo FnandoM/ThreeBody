@@ -17,10 +17,11 @@ app.innerHTML = "";
 
 const width = window.innerWidth;
 const height = window.innerHeight;
+const PIXEL_SCALE = 3;
 
 const scene = createScene();
 const camera = createCamera(width, height);
-const renderer = createRenderer(width, height);
+const renderer = createRenderer(width, height, { pixelScale: PIXEL_SCALE });
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -42,8 +43,9 @@ const state = createState();
 
 // Sim-parametre (sim-units)
 const G = 1.0;
-const eps = 0.02;
-const dt = 0.005;
+const eps = 0.05;
+const dt = 0.01;
+const ENABLE_COLLISIONS = false;
 
 //Initialiser acc én gang før første Verlet-step
 computeAcc(state.pos, state.mass, state.acc, G, eps);
@@ -131,7 +133,7 @@ function syncMeshesFromState() {
 function animate() {
   // 1) Sim step
   stepVerlet(state, dt, G, eps);
-  handleCollisions();
+  if (ENABLE_COLLISIONS) handleCollisions();
 
   syncMeshesFromState();
 
@@ -152,8 +154,15 @@ animate();
 window.addEventListener("resize", () => {
   const w = window.innerWidth;
   const h = window.innerHeight;
+  const pixelScale = renderer.pixelScale ?? PIXEL_SCALE;
 
-  renderer.setSize(w, h, false);
+  renderer.setSize(
+    Math.max(1, Math.floor(w / pixelScale)),
+    Math.max(1, Math.floor(h / pixelScale)),
+    false,
+  );
+  renderer.domElement.style.width = `${w}px`;
+  renderer.domElement.style.height = `${h}px`;
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
